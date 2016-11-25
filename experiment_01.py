@@ -1,38 +1,46 @@
 import asyncio
 
-async def f(foo):
-    print('foo', foo)
+
+async def foo(data):
+    """"sleep and return an increment"""
+    print('foo', data)
     await asyncio.sleep(0.1)
     print('done foo')
-    return foo+1
+    return data + 1
 
 async def bar():
+    """"sleep and return nothing"""
     print('bar')
     await asyncio.sleep(0.2)
     return 'done bar'
 
-async def quitit(loop):
+async def quit_it(loop):
+    """"sleep and stop the loop"""
     print('quit handler')
     await asyncio.sleep(2)
+    print('quit fired')
     loop.stop()
     return None
 
+# get the event loop (aka reactor)
 loop = asyncio.get_event_loop()
 
-foro = f(10)
-boro = bar()
-quitter = quitit(loop)
+# instantiate the coroutines
+foo_coro = foo(10)
+bar_coro = bar()
+quit_coro = quit_it(loop)
 
-futs = [asyncio.ensure_future(x) for x in [foro,boro,quitter]]
+#schedule them (they don't run yet)
+tasks = [asyncio.ensure_future(x) for x in [foo_coro,bar_coro,quit_coro]]
 
-if 1:
-    try:
-        loop.run_forever()
-    except KeyboardInterrupt:
-        loop.stop()
-    finally:
-        loop.close()
-        print('loop closed')
+# run the event loop, try and play nice and ensure that you clean up at the end, even on Keyboard Interrupt
+try:
+    loop.run_forever()
+except KeyboardInterrupt:
+    loop.stop()
+finally:
+    loop.close()
+    print('loop closed')
 
 
 
