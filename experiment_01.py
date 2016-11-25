@@ -8,19 +8,22 @@ async def foo(data):
     print('done foo')
     return data + 1
 
+
 async def bar():
     """"sleep and return nothing"""
     print('bar')
     await asyncio.sleep(0.2)
     return 'done bar'
 
-async def quit_it(loop):
+
+async def quit_it(loop_):
     """"sleep and stop the loop"""
     print('quit handler')
     await asyncio.sleep(2)
     print('quit fired')
-    loop.stop()
+    loop_.stop()
     return None
+
 
 # get the event loop (aka reactor)
 loop = asyncio.get_event_loop()
@@ -30,11 +33,10 @@ foo_coro = foo(10)
 bar_coro = bar()
 quit_coro = quit_it(loop)
 
-#schedule them (they don't run yet)
+# schedule them (they don't run yet)
 
-#use gather to create a single future from a list of coro's
-tasks = asyncio.gather(*[foo_coro,bar_coro,quit_coro])
-
+# use gather to create a single future from a list of coro's
+tasks = asyncio.gather(*[foo_coro, bar_coro, quit_coro])
 
 if 1:
     # run the event loop, try and play nice and ensure that you clean up at the end, even on Keyboard Interrupt
@@ -45,8 +47,3 @@ if 1:
     finally:
         loop.close()
         print('loop closed')
-
-
-
-
-
