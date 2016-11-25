@@ -35,9 +35,8 @@ quit_coro = quit_it(loop)
 #use gather to create a single future from a list of coro's
 tasks = asyncio.gather(*[foo_coro,bar_coro,quit_coro])
 
-loop.run_until_complete(tasks)
 
-if 0:
+if 1:
     # run the event loop, try and play nice and ensure that you clean up at the end, even on Keyboard Interrupt
     try:
         loop.run_forever()
