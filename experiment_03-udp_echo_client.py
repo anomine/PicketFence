@@ -1,43 +1,46 @@
+import sys
 import asyncio
 
 
-class EchoClientProtocol:
-    def __init__(self, message_, loop_):
-        self.message = message_
-        self.loop = loop_
-        self.transport = None
+def got_input_data(q):
+    asyncio.ensure_future(q.put(sys.stdin.readline()))
 
+
+class EchoServerClientProtocol(asyncio.Protocol):
     def connection_made(self, transport_):
+        peername = transport_.get_extra_info('peername')
+        print('Connection from {}'.format(peername))
         self.transport = transport_
-        print('Send:', self.message)
-        self.transport.sendto(self.message.encode())
 
-    def datagram_received(self, data, address):
-        print("Received:", data.decode())
+    def data_received(self, data):
+        message = data.decode()
+        print('Data received: {!r}'.format(message))
+        fut = asyncio.ensure_future(q.get())
+        fut.add_done_callback(self.write_reply)
 
-        print("Close the socket")
-        self.transport.close()
+    def write_reply(self, fut):
+        reply = fut.result()
+        print('Send: {!r}'.format(reply))
+        self.transport.write(reply.encode())
 
-    def error_received(self, exc):
-        print('Error received:', exc)
+        #print('Close the client socket')
+        #self.transport.close()
 
-    def connection_lost(self, exc):
-        print("Socket closed, stop the event loop")
-        loop_ = asyncio.get_event_loop()
-        loop_.stop()
-
+q = asyncio.Queue()
 loop = asyncio.get_event_loop()
-message = "Hello World!"
-coro = lambda: EchoClientProtocol(message, loop)
-print (type(coro))
-if 0:
-    connect = loop.create_datagram_endpoint(
-        lambda: EchoClientProtocol(message, loop),
-        remote_addr=('127.0.0.1', 9999))
-    print('endpoint created')
-    transport, protocol = loop.run_until_complete(connect)
-    print('endpoint completed')
+loop.add_reader(sys.__stdin__, got_input_data, q)
+# Each client connection will create a new protocol instance
+coro = loop.create_server(EchoServerClientProtocol, '127.0.0.1', 9999)
+server = loop.run_until_complete(coro)
+
+# Serve requests until CTRL+c is pressed
+print('Serving on {}'.format(server.sockets[0].getsockname()))
+try:
     loop.run_forever()
-    print('looped finished')
-    transport.close()
+except KeyboardInterrupt:
+    pass
+
+# Close the server
+server.close()
+loop.run_until_complete(server.wait_closed())
 loop.close()
