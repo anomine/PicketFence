@@ -5,8 +5,30 @@ from types import coroutine
 ## windows only console async input
 
 loop = asyncio.get_event_loop()
+from asyncio import Queue
+
+myq = Queue()
+
+@coroutine
+def get_key_now():
+    while True:
+        #print('x')
+        if not kbhit():
+            pass
+            yield from asyncio.sleep(0.1)
+        else:
+            ch = getch()
+            print ('got now',ch)
+            yield from myq.put(ch)
+
+async def wait_q():
+    while True:
+        x = await myq.get()
+        print('got q',x)
 
 
+def print_key_now(ch):
+    print('now',ch)
 
 async def get_key(future):
     if 1:
@@ -28,12 +50,20 @@ def print_key(future):
 
 async def monitor_keys():
     while True:
-        coro_fut = asyncio.Future()
-        coro_fut.add_done_callback(print_key)
-        await get_key(coro_fut)
-
-coro = monitor_keys()
-asyncio.gather(coro)
+        if 0:
+            coro_fut = asyncio.Future()
+            coro_fut.add_done_callback(print_key)
+            await get_key(coro_fut)
+        else:
+            coro = get_key_now()
+            await asyncio.ensure_future(coro)
+if 0:
+    coro = monitor_keys()
+    asyncio.gather(coro)
+else:
+    coro = get_key_now()
+    coro_q = wait_q()
+    asyncio.gather(coro,coro_q)
 
 if 0:
     while True:
